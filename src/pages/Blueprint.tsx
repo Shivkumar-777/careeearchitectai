@@ -12,9 +12,12 @@ import {
   ArrowRight,
   Sparkles,
   MessageSquare,
-  Trophy
+  Trophy,
+  Loader2
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { usePdfExport } from "@/hooks/usePdfExport";
+import { toast } from "sonner";
 
 interface CareerData {
   hasResume: boolean;
@@ -225,6 +228,17 @@ const Blueprint = () => {
   const [careerData, setCareerData] = useState<CareerData | null>(null);
   const [blueprint, setBlueprint] = useState<ReturnType<typeof getBlueprint> | null>(null);
   const [activePhase, setActivePhase] = useState(0);
+  const { exportToPdf, isExporting } = usePdfExport();
+
+  const handleExportPdf = async () => {
+    if (!blueprint || !careerData) return;
+    try {
+      await exportToPdf(blueprint, careerData.targetRole);
+      toast.success("PDF downloaded successfully!");
+    } catch {
+      toast.error("Failed to generate PDF. Please try again.");
+    }
+  };
 
   useEffect(() => {
     const stored = sessionStorage.getItem('careerData');
@@ -261,9 +275,13 @@ const Blueprint = () => {
             <Button variant="outline" onClick={() => navigate('/results')}>
               Back to Results
             </Button>
-            <Button variant="default">
-              <Download className="w-4 h-4 mr-2" />
-              Export PDF
+            <Button variant="default" onClick={handleExportPdf} disabled={isExporting}>
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
+              {isExporting ? "Generating..." : "Export PDF"}
             </Button>
           </div>
         </div>
@@ -498,9 +516,13 @@ const Blueprint = () => {
                 Start Building
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </Button>
-              <Button variant="glass" size="lg">
-                <Download className="w-4 h-4 mr-2" />
-                Download as PDF
+              <Button variant="glass" size="lg" onClick={handleExportPdf} disabled={isExporting}>
+                {isExporting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 mr-2" />
+                )}
+                {isExporting ? "Generating..." : "Download as PDF"}
               </Button>
             </div>
           </div>
