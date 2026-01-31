@@ -14,7 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          target_role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          target_role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          target_role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      saved_blueprints: {
+        Row: {
+          blueprint_data: Json
+          created_at: string
+          id: string
+          missing_skills: Json
+          skills_used: Json
+          target_role: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          blueprint_data: Json
+          created_at?: string
+          id?: string
+          missing_skills?: Json
+          skills_used?: Json
+          target_role: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          blueprint_data?: Json
+          created_at?: string
+          id?: string
+          missing_skills?: Json
+          skills_used?: Json
+          target_role?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      saved_skills: {
+        Row: {
+          created_at: string
+          id: string
+          skill: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          skill: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          skill?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

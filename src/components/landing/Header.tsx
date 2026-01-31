@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Compass } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Header = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
@@ -36,12 +38,20 @@ const Header = () => {
 
         {/* CTA */}
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm">
-            Sign In
-          </Button>
-          <Button variant="default" size="sm" onClick={() => navigate('/dashboard')}>
-            Get Started
-          </Button>
+          {user ? (
+            <Button variant="default" size="sm" onClick={() => navigate('/dashboard')}>
+              Dashboard
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
+                Sign In
+              </Button>
+              <Button variant="default" size="sm" onClick={() => navigate('/auth')}>
+                Get Started
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </header>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -8,10 +8,11 @@ import {
   ArrowRight, 
   X,
   Plus,
-  Compass,
   Sparkles
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { useProfile } from "@/hooks/useProfile";
 
 const popularSkills = [
   "JavaScript", "TypeScript", "React", "Node.js", "Python", 
@@ -35,11 +36,22 @@ const targetRoles = [
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { savedSkills, profile } = useProfile();
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [jobDescription, setJobDescription] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [targetRole, setTargetRole] = useState("");
   const [dragActive, setDragActive] = useState(false);
+
+  // Load saved skills and target role from profile
+  useEffect(() => {
+    if (savedSkills.length > 0) {
+      setSelectedSkills(savedSkills);
+    }
+    if (profile?.target_role) {
+      setTargetRole(profile.target_role);
+    }
+  }, [savedSkills, profile]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -89,22 +101,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div 
-            className="flex items-center gap-2 cursor-pointer" 
-            onClick={() => navigate('/')}
-          >
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-              <Compass className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-xl font-bold text-foreground">
-              Career<span className="gradient-text">Architect</span>
-            </span>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader />
 
       <main className="pt-24 pb-12 px-4">
         <div className="max-w-4xl mx-auto">
