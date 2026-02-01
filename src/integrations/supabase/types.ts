@@ -98,6 +98,45 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          skill: string
+          started_at: string | null
+          status: string
+          target_role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          skill: string
+          started_at?: string | null
+          status?: string
+          target_role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          skill?: string
+          started_at?: string | null
+          status?: string
+          target_role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
