@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Sparkles
 } from "lucide-react";
+import SmartProjectGenerator from "@/components/dashboard/SmartProjectGenerator";
 import { 
   RadarChart, 
   PolarGrid, 
@@ -298,6 +299,20 @@ const Results = () => {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Smart Project Generator */}
+          <div className="glass-card p-6 mb-8">
+            <SmartProjectGenerator
+              targetRole={careerData.targetRole}
+              currentSkills={analysis.matched}
+              missingSkills={analysis.missing}
+              onSelectProject={(project) => {
+                // Store the selected project and navigate to blueprint
+                sessionStorage.setItem('selectedProject', JSON.stringify(project));
+                navigate('/blueprint');
+              }}
+            />
           </div>
 
           {/* CTA */}
