@@ -10,6 +10,7 @@ export interface Profile {
   display_name: string | null;
   email: string | null;
   target_role: string | null;
+  resume_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -100,7 +101,7 @@ export const useProfile = () => {
     }
   }, [user]);
 
-  const updateProfile = async (updates: Partial<Pick<Profile, "display_name" | "target_role">>) => {
+  const updateProfile = async (updates: Partial<Pick<Profile, "display_name" | "target_role" | "resume_url">>) => {
     if (!user) return;
 
     try {
@@ -116,6 +117,73 @@ export const useProfile = () => {
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({ title: "Failed to update profile", variant: "destructive" });
+    }
+  };
+
+  const uploadResume = async (file: File) => {
+    if (!user) return null;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/resume.${fileExt}`;
+
+      // Upload file to storage
+      const { error: uploadError } = await supabase.storage
+        .from('resumes')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get signed URL (valid for 1 year)
+      const { data: urlData, error: urlError } = await supabase.storage
+        .from('resumes')
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+
+      if (urlError) throw urlError;
+
+      // Update profile with resume URL
+      await updateProfile({ resume_url: filePath });
+      
+      toast({ title: "Resume uploaded successfully!" });
+      return urlData.signedUrl;
+    } catch (error) {
+      console.error("Error uploading resume:", error);
+      toast({ title: "Failed to upload resume", variant: "destructive" });
+      return null;
+    }
+  };
+
+  const deleteResume = async () => {
+    if (!user || !profile?.resume_url) return;
+
+    try {
+      const { error: deleteError } = await supabase.storage
+        .from('resumes')
+        .remove([profile.resume_url]);
+
+      if (deleteError) throw deleteError;
+
+      await updateProfile({ resume_url: null });
+      toast({ title: "Resume deleted" });
+    } catch (error) {
+      console.error("Error deleting resume:", error);
+      toast({ title: "Failed to delete resume", variant: "destructive" });
+    }
+  };
+
+  const getResumeUrl = async () => {
+    if (!user || !profile?.resume_url) return null;
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('resumes')
+        .createSignedUrl(profile.resume_url, 60 * 60); // 1 hour
+
+      if (error) throw error;
+      return data.signedUrl;
+    } catch (error) {
+      console.error("Error getting resume URL:", error);
+      return null;
     }
   };
 
@@ -204,6 +272,9 @@ export const useProfile = () => {
     saveSkills,
     saveBlueprint,
     deleteBlueprint,
+    uploadResume,
+    deleteResume,
+    getResumeUrl,
     refetch: () => Promise.all([fetchProfile(), fetchSavedSkills(), fetchSavedBlueprints()]),
   };
 };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,11 @@ import {
   Briefcase, 
   Loader2,
   Save,
-  X
+  X,
+  FileText,
+  Upload,
+  Trash2,
+  ExternalLink
 } from "lucide-react";
 
 const popularSkills = [
@@ -39,24 +43,39 @@ const targetRoles = [
 const Profile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { profile, savedSkills, loading, updateProfile, saveSkills } = useProfile();
+  const { profile, savedSkills, loading, updateProfile, saveSkills, uploadResume, deleteResume, getResumeUrl } = useProfile();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [displayName, setDisplayName] = useState(profile?.display_name || "");
-  const [targetRole, setTargetRole] = useState(profile?.target_role || "");
-  const [selectedSkills, setSelectedSkills] = useState<string[]>(savedSkills);
+  const [displayName, setDisplayName] = useState("");
+  const [targetRole, setTargetRole] = useState("");
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
 
   // Update local state when profile loads
-  useState(() => {
+  useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name || "");
       setTargetRole(profile.target_role || "");
     }
-  });
+  }, [profile]);
 
-  useState(() => {
+  useEffect(() => {
     setSelectedSkills(savedSkills);
-  });
+  }, [savedSkills]);
+
+  useEffect(() => {
+    const loadResumeUrl = async () => {
+      if (profile?.resume_url) {
+        const url = await getResumeUrl();
+        setResumeUrl(url);
+      } else {
+        setResumeUrl(null);
+      }
+    };
+    loadResumeUrl();
+  }, [profile?.resume_url]);
 
   const toggleSkill = (skill: string) => {
     setSelectedSkills(prev => 
@@ -74,6 +93,39 @@ const Profile = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowedTypes.includes(file.type)) {
+      return;
+    }
+
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      return;
+    }
+
+    setUploadingResume(true);
+    const url = await uploadResume(file);
+    if (url) {
+      setResumeUrl(url);
+    }
+    setUploadingResume(false);
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteResume = async () => {
+    await deleteResume();
+    setResumeUrl(null);
   };
 
   if (loading) {
@@ -133,6 +185,71 @@ const Profile = () => {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Resume */}
+            <div className="glass-card p-6">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-accent" />
+                Resume
+              </h2>
+              
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleResumeUpload}
+                accept=".pdf,.doc,.docx"
+                className="hidden"
+              />
+              
+              {profile?.resume_url ? (
+                <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border border-border">
+                  <FileText className="w-8 h-8 text-primary" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">Resume uploaded</p>
+                    <p className="text-sm text-muted-foreground">
+                      {profile.resume_url.split('/').pop()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {resumeUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(resumeUrl, '_blank')}
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        View
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDeleteResume}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-all duration-200"
+                >
+                  {uploadingResume ? (
+                    <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-primary" />
+                  ) : (
+                    <Upload className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
+                  )}
+                  <p className="font-medium mb-1">
+                    {uploadingResume ? 'Uploading...' : 'Upload your resume'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    PDF, DOC, or DOCX (max 10MB)
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Target Role */}
