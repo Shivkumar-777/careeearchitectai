@@ -7,22 +7,13 @@ import {
   Briefcase, 
   ArrowRight, 
   X,
-  Plus,
   Sparkles,
   Linkedin,
   Link
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useProfile } from "@/hooks/useProfile";
-
-const popularSkills = [
-  "JavaScript", "TypeScript", "React", "Node.js", "Python", 
-  "Java", "Spring Boot", "AWS", "Docker", "Kubernetes",
-  "PostgreSQL", "MongoDB", "Redis", "GraphQL", "REST APIs",
-  "CI/CD", "Git", "Agile", "SQL", "Linux"
-];
 
 const targetRoles = [
   "Backend Developer",
@@ -39,24 +30,20 @@ const targetRoles = [
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { savedSkills, profile } = useProfile();
+  const { profile } = useProfile();
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [inputMethod, setInputMethod] = useState<"pdf" | "linkedin">("pdf");
   const [jobDescription, setJobDescription] = useState("");
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [targetRole, setTargetRole] = useState("");
   const [dragActive, setDragActive] = useState(false);
 
-  // Load saved skills and target role from profile
+  // Load target role from profile
   useEffect(() => {
-    if (savedSkills.length > 0) {
-      setSelectedSkills(savedSkills);
-    }
     if (profile?.target_role) {
       setTargetRole(profile.target_role);
     }
-  }, [savedSkills, profile]);
+  }, [profile]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -83,14 +70,6 @@ const Dashboard = () => {
     }
   };
 
-  const toggleSkill = (skill: string) => {
-    setSelectedSkills(prev => 
-      prev.includes(skill) 
-        ? prev.filter(s => s !== skill)
-        : [...prev, skill]
-    );
-  };
-
   const isValidLinkedinUrl = (url: string) => {
     return url.match(/^(https?:\/\/)?(www\.)?linkedin\.com\/(in|pub)\/[a-zA-Z0-9_-]+\/?$/i);
   };
@@ -101,15 +80,14 @@ const Dashboard = () => {
       hasResume: !!resumeFile,
       linkedinUrl: inputMethod === "linkedin" ? linkedinUrl : "",
       jobDescription,
-      selectedSkills,
       targetRole
     }));
     navigate('/results');
   };
 
   const hasValidInput = inputMethod === "pdf" 
-    ? (resumeFile || selectedSkills.length > 0)
-    : (isValidLinkedinUrl(linkedinUrl) || selectedSkills.length > 0);
+    ? !!resumeFile
+    : isValidLinkedinUrl(linkedinUrl);
 
   const isFormValid = hasValidInput && targetRole;
 
@@ -281,38 +259,6 @@ const Dashboard = () => {
               />
             </div>
 
-            {/* Current Skills */}
-            <div className="glass-card p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Plus className="w-5 h-5 text-accent" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold">Current Skills</h2>
-                  <p className="text-sm text-muted-foreground">Select skills you already have</p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {popularSkills.map((skill) => (
-                  <Badge
-                    key={skill}
-                    variant={selectedSkills.includes(skill) ? "default" : "outline"}
-                    className={`cursor-pointer transition-all duration-200 ${
-                      selectedSkills.includes(skill)
-                        ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                        : 'hover:bg-muted'
-                    }`}
-                    onClick={() => toggleSkill(skill)}
-                  >
-                    {skill}
-                    {selectedSkills.includes(skill) && (
-                      <X className="w-3 h-3 ml-1" />
-                    )}
-                  </Badge>
-                ))}
-              </div>
-            </div>
 
             {/* Target Role */}
             <div className="glass-card p-6">
@@ -357,7 +303,7 @@ const Dashboard = () => {
               </Button>
               {!isFormValid && (
                 <p className="text-sm text-muted-foreground mt-3">
-                  Please upload a resume or select skills, and choose a target role
+                  Please upload a resume or enter LinkedIn URL, and choose a target role
                 </p>
               )}
             </div>
