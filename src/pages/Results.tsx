@@ -22,8 +22,9 @@ import {
 
 interface CareerData {
   hasResume: boolean;
+  linkedinUrl?: string;
   jobDescription: string;
-  selectedSkills: string[];
+  selectedSkills?: string[];
   targetRole: string;
 }
 
@@ -112,8 +113,10 @@ const Results = () => {
     if (stored) {
       const data = JSON.parse(stored) as CareerData;
       setCareerData(data);
-      setAnalysis(getSkillAnalysis(data.targetRole, data.selectedSkills));
-      setRadarData(getRadarData(data.targetRole, data.selectedSkills));
+      // Use selectedSkills if available, otherwise use empty array (skills will be extracted from resume/LinkedIn)
+      const skills = data.selectedSkills || [];
+      setAnalysis(getSkillAnalysis(data.targetRole, skills));
+      setRadarData(getRadarData(data.targetRole, skills));
     } else {
       navigate('/dashboard');
     }
