@@ -9,11 +9,13 @@ import {
   X,
   Sparkles,
   Linkedin,
-  Link
+  Link,
+  Loader2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useProfile } from "@/hooks/useProfile";
+import { useToast } from "@/hooks/use-toast";
 
 const targetRoles = [
   "Backend Developer",
@@ -31,12 +33,14 @@ const targetRoles = [
 const Dashboard = () => {
   const navigate = useNavigate();
   const { profile } = useProfile();
+  const { toast } = useToast();
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [inputMethod, setInputMethod] = useState<"pdf" | "linkedin">("pdf");
   const [jobDescription, setJobDescription] = useState("");
   const [targetRole, setTargetRole] = useState("");
   const [dragActive, setDragActive] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Load target role from profile
   useEffect(() => {
@@ -74,15 +78,68 @@ const Dashboard = () => {
     return url.match(/^(https?:\/\/)?(www\.)?linkedin\.com\/(in|pub)\/[a-zA-Z0-9_-]+\/?$/i);
   };
 
-  const handleAnalyze = () => {
-    // Store data in sessionStorage for the results page
-    sessionStorage.setItem('careerData', JSON.stringify({
-      hasResume: !!resumeFile,
-      linkedinUrl: inputMethod === "linkedin" ? linkedinUrl : "",
-      jobDescription,
-      targetRole
-    }));
-    navigate('/results');
+  const extractSkillsFromResume = async (file: File): Promise<string[]> => {
+    const formData = new FormData();
+    formData.append("resume", file);
+
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-skills`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to extract skills");
+    }
+
+    const data = await response.json();
+    return data.skills || [];
+  };
+
+  const handleAnalyze = async () => {
+    setIsAnalyzing(true);
+    
+    try {
+      let extractedSkills: string[] = [];
+      
+      // Extract skills from PDF if uploaded
+      if (inputMethod === "pdf" && resumeFile) {
+        toast({
+          title: "Analyzing your resume...",
+          description: "Extracting skills from your document",
+        });
+        extractedSkills = await extractSkillsFromResume(resumeFile);
+        toast({
+          title: "Skills extracted!",
+          description: `Found ${extractedSkills.length} skills in your resume`,
+        });
+      }
+
+      // Store data in sessionStorage for the results page
+      sessionStorage.setItem('careerData', JSON.stringify({
+        hasResume: !!resumeFile,
+        linkedinUrl: inputMethod === "linkedin" ? linkedinUrl : "",
+        jobDescription,
+        selectedSkills: extractedSkills,
+        targetRole
+      }));
+      navigate('/results');
+    } catch (error) {
+      console.error("Error analyzing:", error);
+      toast({
+        title: "Analysis failed",
+        description: error instanceof Error ? error.message : "Failed to analyze resume",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const hasValidInput = inputMethod === "pdf" 
@@ -295,13 +352,22 @@ const Dashboard = () => {
                 variant="hero"
                 size="xl"
                 onClick={handleAnalyze}
-                disabled={!isFormValid}
+                disabled={!isFormValid || isAnalyzing}
                 className="group"
               >
-                Generate My Engineering Blueprint
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Analyzing Resume...
+                  </>
+                ) : (
+                  <>
+                    Generate My Engineering Blueprint
+                    <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                  </>
+                )}
               </Button>
-              {!isFormValid && (
+              {!isFormValid && !isAnalyzing && (
                 <p className="text-sm text-muted-foreground mt-3">
                   Please upload a resume or enter LinkedIn URL, and choose a target role
                 </p>
