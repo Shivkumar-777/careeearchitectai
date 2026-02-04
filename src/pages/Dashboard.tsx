@@ -8,8 +8,11 @@ import {
   ArrowRight, 
   X,
   Plus,
-  Sparkles
+  Sparkles,
+  Linkedin,
+  Link
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useProfile } from "@/hooks/useProfile";
@@ -38,6 +41,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { savedSkills, profile } = useProfile();
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [inputMethod, setInputMethod] = useState<"pdf" | "linkedin">("pdf");
   const [jobDescription, setJobDescription] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [targetRole, setTargetRole] = useState("");
@@ -86,10 +91,15 @@ const Dashboard = () => {
     );
   };
 
+  const isValidLinkedinUrl = (url: string) => {
+    return url.match(/^(https?:\/\/)?(www\.)?linkedin\.com\/(in|pub)\/[a-zA-Z0-9_-]+\/?$/i);
+  };
+
   const handleAnalyze = () => {
     // Store data in sessionStorage for the results page
     sessionStorage.setItem('careerData', JSON.stringify({
       hasResume: !!resumeFile,
+      linkedinUrl: inputMethod === "linkedin" ? linkedinUrl : "",
       jobDescription,
       selectedSkills,
       targetRole
@@ -97,7 +107,11 @@ const Dashboard = () => {
     navigate('/results');
   };
 
-  const isFormValid = (resumeFile || selectedSkills.length > 0) && targetRole;
+  const hasValidInput = inputMethod === "pdf" 
+    ? (resumeFile || selectedSkills.length > 0)
+    : (isValidLinkedinUrl(linkedinUrl) || selectedSkills.length > 0);
+
+  const isFormValid = hasValidInput && targetRole;
 
   return (
     <div className="min-h-screen">
@@ -121,67 +135,130 @@ const Dashboard = () => {
           </div>
 
           <div className="space-y-6">
-            {/* Resume Upload */}
+            {/* Resume/LinkedIn Input */}
             <div className="glass-card p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Upload className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold">Upload Resume</h2>
-                  <p className="text-sm text-muted-foreground">PDF format recommended</p>
-                </div>
+              {/* Toggle between PDF and LinkedIn */}
+              <div className="flex items-center gap-2 mb-6">
+                <button
+                  onClick={() => setInputMethod("pdf")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
+                    inputMethod === "pdf"
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-muted/50 border-border text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload PDF
+                </button>
+                <button
+                  onClick={() => setInputMethod("linkedin")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
+                    inputMethod === "linkedin"
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-muted/50 border-border text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Linkedin className="w-4 h-4" />
+                  LinkedIn Profile
+                </button>
               </div>
 
-              <div
-                className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
-                  dragActive 
-                    ? 'border-primary bg-primary/5' 
-                    : resumeFile 
-                      ? 'border-success bg-success/5' 
-                      : 'border-border hover:border-muted-foreground'
-                }`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-              >
-                {resumeFile ? (
-                  <div className="flex items-center justify-center gap-3">
-                    <FileText className="w-8 h-8 text-success" />
-                    <div className="text-left">
-                      <p className="font-medium text-foreground">{resumeFile.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(resumeFile.size / 1024).toFixed(1)} KB
-                      </p>
+              {inputMethod === "pdf" ? (
+                <>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Upload className="w-5 h-5 text-primary" />
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setResumeFile(null)}
-                      className="ml-4"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                    <div>
+                      <h2 className="text-lg font-semibold">Upload Resume</h2>
+                      <p className="text-sm text-muted-foreground">PDF format recommended</p>
+                    </div>
                   </div>
-                ) : (
-                  <>
-                    <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-foreground font-medium mb-1">
-                      Drag and drop your resume here
-                    </p>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      or click to browse
-                    </p>
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      onChange={handleFileChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+
+                  <div
+                    className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
+                      dragActive 
+                        ? 'border-primary bg-primary/5' 
+                        : resumeFile 
+                          ? 'border-success bg-success/5' 
+                          : 'border-border hover:border-muted-foreground'
+                    }`}
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                  >
+                    {resumeFile ? (
+                      <div className="flex items-center justify-center gap-3">
+                        <FileText className="w-8 h-8 text-success" />
+                        <div className="text-left">
+                          <p className="font-medium text-foreground">{resumeFile.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {(resumeFile.size / 1024).toFixed(1)} KB
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setResumeFile(null)}
+                          className="ml-4"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                        <p className="text-foreground font-medium mb-1">
+                          Drag and drop your resume here
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          or click to browse
+                        </p>
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          onChange={handleFileChange}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                      </>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-[#0A66C2]/10 flex items-center justify-center">
+                      <Linkedin className="w-5 h-5 text-[#0A66C2]" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold">LinkedIn Profile</h2>
+                      <p className="text-sm text-muted-foreground">We'll analyze your public profile</p>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      type="url"
+                      value={linkedinUrl}
+                      onChange={(e) => setLinkedinUrl(e.target.value)}
+                      placeholder="https://linkedin.com/in/your-profile"
+                      className="pl-11 h-12 bg-muted/50 border-border"
                     />
-                  </>
-                )}
-              </div>
+                  </div>
+                  {linkedinUrl && !isValidLinkedinUrl(linkedinUrl) && (
+                    <p className="text-sm text-destructive mt-2">
+                      Please enter a valid LinkedIn profile URL
+                    </p>
+                  )}
+                  {linkedinUrl && isValidLinkedinUrl(linkedinUrl) && (
+                    <p className="text-sm text-success mt-2 flex items-center gap-1">
+                      ✓ Valid LinkedIn URL
+                    </p>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Job Description */}
